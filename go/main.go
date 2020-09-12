@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
+	"github.com/felixge/fgprof"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo"
@@ -223,6 +226,30 @@ func (mc *MySQLConnectionEnv) ConnectDB() (*sqlx.DB, error) {
 }
 
 func init() {
+	var ProfSeconds = "100"
+	var ProfPath = "/tmp"
+	go func() {
+		cmd := exec.Command("bash", "./bin/profile.sh", ProfSeconds, ProfPath+"/profile")
+		err := cmd.Run()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	go func() {
+		cmd := exec.Command("bash", "./bin/trace.sh", ProfSeconds, ProfPath+"/trace")
+		err := cmd.Run()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	go func() {
+		cmd := exec.Command("bash", "./bin/fgprof.sh", ProfSeconds, ProfPath+"/fgprof")
+		err := cmd.Run()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	jsonText, err := ioutil.ReadFile("../fixture/chair_condition.json")
 	if err != nil {
 		fmt.Printf("%v\n", err)
@@ -239,6 +266,12 @@ func init() {
 }
 
 func main() {
+	runtime.SetBlockProfileRate(1)
+	http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
+	go func() {
+		http.ListenAndServe("0.0.0.0:6060", nil)
+	}()
+
 	// Echo instance
 	e := echo.New()
 	e.Debug = true
