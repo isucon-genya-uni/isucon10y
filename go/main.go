@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/felixge/fgprof"
 	_ "github.com/go-sql-driver/mysql"
@@ -474,6 +475,7 @@ func postChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
+	cntMap.Clear()
 	for _, row := range records {
 		rm := RecordMapper{Record: row}
 		id := rm.NextInt()
@@ -510,6 +512,42 @@ func postChair(c echo.Context) error {
 	}
 	return c.NoContent(http.StatusCreated)
 }
+
+type countMap struct {
+	// Setが多いならsync.Mutex
+	sync.RWMutex
+	count map[string]int64
+}
+
+func (c *countMap) Set(key string, value int64) {
+	c.Lock()
+	c.count[key] = value
+	c.Unlock()
+}
+
+func (c *countMap) Get(key string) (int64, bool) {
+	c.RLock()
+	v, found := c.count[key]
+	c.RUnlock()
+	return v, found
+}
+
+func (c *countMap) Clear() {
+	c.RLock()
+	c.count = make(map[string]int64)
+	c.RUnlock()
+	return
+}
+
+func NewCountMap() *countMap {
+	m := make(map[string]int64)
+	c := &countMap{
+		count: m,
+	}
+	return c
+}
+
+var cntMap = NewCountMap()
 
 func searchChairs(c echo.Context) error {
 	conditions := make([]string, 0)
@@ -626,27 +664,16 @@ func searchChairs(c echo.Context) error {
 
 	hashBytes := md5.Sum([]byte(searchCond))
 	hash := hex.EncodeToString(hashBytes[:])
-	var count = int64(-1)
-	err = db.Get(&count, `SELECT cnt FROM chair_search_count WHERE cond = ?`, hash)
-	if err != nil && err != sql.ErrNoRows {
-		c.Logger().Errorf("searchChairs DB execution error : %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
+	count, ok := cntMap.Get(hash)
+	fmt.Printf("\n😺 %+v", count)
 	var res ChairSearchResponse
-	if count == -1 {
+	if !ok {
 		err = db.Get(&res.Count, countQuery+searchCondition, params...)
 		if err != nil {
 			c.Logger().Errorf("searchChairs DB execution error : %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		go func() {
-			_, err := db.Exec("INSERT INTO chair_search_count(cond,cnt) VALUES (?,?)", hash, res.Count)
-			if err != nil {
-				c.Logger().Errorf("failed to insert estate: %v", err)
-				return
-			}
-		}()
+		cntMap.Set(hash, res.Count)
 	} else {
 		res.Count = count
 	}
