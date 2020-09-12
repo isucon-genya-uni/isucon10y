@@ -226,7 +226,7 @@ func (mc *MySQLConnectionEnv) ConnectDB() (*sqlx.DB, error) {
 }
 
 func init() {
-	var ProfSeconds = "3"
+	var ProfSeconds = "100"
 	var ProfPath = "/tmp"
 	go func() {
 		cmd := exec.Command("bash", "./bin/profile.sh", ProfSeconds, ProfPath+"/profile")
