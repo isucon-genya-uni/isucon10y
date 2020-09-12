@@ -70,6 +70,7 @@ type Estate struct {
 	Longitude   float64 `db:"longitude" json:"longitude"`
 	Address     string  `db:"address" json:"address"`
 	Rent        int64   `db:"rent" json:"rent"`
+	RentID      int64   `db:"rent_id" json:"-"`
 	DoorHeight  int64   `db:"door_height" json:"doorHeight"`
 	DoorWidth   int64   `db:"door_width" json:"doorWidth"`
 	Features    string  `db:"features" json:"features"`
@@ -341,6 +342,22 @@ func initialize(c echo.Context) error {
 		}
 	}
 
+	for _, r := range estateSearchCondition.Rent.Ranges {
+		if r.Max > 0 {
+			query := `UPDATE estate SET rent_id = ? WHERE rent > ? AND rent <= ?`
+			_, err := db.Exec(query, r.ID, r.Min, r.Max)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			query := `UPDATE estate SET rent_id = ? WHERE rent > ?`
+			_, err := db.Exec(query, r.ID, r.Min)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
 	})
@@ -369,6 +386,19 @@ func getChairDetail(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, chair)
+}
+
+func valueToRangeID(value int64, rc *RangeCondition) int64 {
+	for _, r := range rc.Ranges {
+		if r.Min > value && r.Min != -1 {
+			continue
+		}
+		if r.Max < value && r.Max != -1 {
+			continue
+		}
+		return r.ID
+	}
+	return -1
 }
 
 func postChair(c echo.Context) error {
@@ -707,11 +737,12 @@ func postEstate(c echo.Context) error {
 		doorWidth := rm.NextInt()
 		features := rm.NextString()
 		popularity := rm.NextInt()
+		rentID := valueToRangeID(int64(rent), &estateSearchCondition.Rent)
 		if err := rm.Err(); err != nil {
 			c.Logger().Errorf("failed to read record: %v", err)
 			return c.NoContent(http.StatusBadRequest)
 		}
-		_, err := tx.Exec("INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, address, latitude, longitude, rent, doorHeight, doorWidth, features, popularity)
+		_, err := tx.Exec("INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, rent_id, door_height, door_width, features, popularity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, address, latitude, longitude, rent, rentID, doorHeight, doorWidth, features, popularity)
 		if err != nil {
 			c.Logger().Errorf("failed to insert estate: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
@@ -763,20 +794,14 @@ func searchEstates(c echo.Context) error {
 	}
 
 	if c.QueryParam("rentRangeId") != "" {
-		estateRent, err := getRange(estateSearchCondition.Rent, c.QueryParam("rentRangeId"))
+		_, err := getRange(estateSearchCondition.Rent, c.QueryParam("rentRangeId"))
 		if err != nil {
 			c.Echo().Logger.Infof("rentRangeID invalid, %v : %v", c.QueryParam("rentRangeId"), err)
 			return c.NoContent(http.StatusBadRequest)
 		}
 
-		if estateRent.Min != -1 {
-			conditions = append(conditions, "rent >= ?")
-			params = append(params, estateRent.Min)
-		}
-		if estateRent.Max != -1 {
-			conditions = append(conditions, "rent < ?")
-			params = append(params, estateRent.Max)
-		}
+		conditions = append(conditions, "rent_id = ?")
+		params = append(params, c.QueryParam("rentRangeId"))
 	}
 
 	if c.QueryParam("features") != "" {
