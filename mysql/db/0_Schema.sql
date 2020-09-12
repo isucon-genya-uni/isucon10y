@@ -3,6 +3,7 @@ CREATE DATABASE isuumo;
 
 DROP TABLE IF EXISTS isuumo.estate;
 DROP TABLE IF EXISTS isuumo.chair;
+DROP TABLE IF EXISTS isuumo.chair_search_count;
 
 CREATE TABLE isuumo.estate
 (
@@ -49,6 +50,12 @@ CREATE TABLE isuumo.chair
     kind        VARCHAR(64)     NOT NULL,
     popularity  INTEGER         NOT NULL,
     stock       INTEGER         NOT NULL
+);
+
+CREATE TABLE isuumo.chair_search_count
+(
+    cond        CHAR(32) NOT NULL PRIMARY KEY,
+    cnt         INTEGER NOT NULL
 );
 /*
 MySQL [isuumo]> explain SELECT * FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT 20;

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/md5"
 	"database/sql"
 	"encoding/csv"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -49,6 +51,11 @@ type Chair struct {
 	Kind        string `db:"kind" json:"kind"`
 	Popularity  int64  `db:"popularity" json:"-"`
 	Stock       int64  `db:"stock" json:"-"`
+}
+
+type ChairCount struct {
+	Cond string `db:"cond"`
+	Cnt  int64  `db:"cnt"`
 }
 
 type ChairSearchResponse struct {
@@ -502,7 +509,7 @@ func postChair(c echo.Context) error {
 func searchChairs(c echo.Context) error {
 	conditions := make([]string, 0)
 	params := make([]interface{}, 0)
-
+	searchCond := c.QueryParam("priceRangeId") + "\t" + c.QueryParam("heightRangeId") + "\t" + c.QueryParam("widthRangeId") + "\t" + c.QueryParam("depthRangeId") + "\t" + c.QueryParam("kind") + "\t" + c.QueryParam("color") + "\t" + c.QueryParam("features")
 	if c.QueryParam("priceRangeId") != "" {
 		chairPrice, err := getRange(chairSearchCondition.Price, c.QueryParam("priceRangeId"))
 		if err != nil {
@@ -612,11 +619,31 @@ func searchChairs(c echo.Context) error {
 	searchCondition := strings.Join(conditions, " AND ")
 	limitOffset := " ORDER BY popularity DESC, id ASC LIMIT ? OFFSET ?"
 
-	var res ChairSearchResponse
-	err = db.Get(&res.Count, countQuery+searchCondition, params...)
-	if err != nil {
+	hashBytes := md5.Sum([]byte(searchCond))
+	hash := hex.EncodeToString(hashBytes[:])
+	var count = int64(-1)
+	err = db.Get(&count, `SELECT cnt FROM chair_search_count WHERE cond = ?`, hash)
+	if err != nil && err != sql.ErrNoRows {
 		c.Logger().Errorf("searchChairs DB execution error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	var res ChairSearchResponse
+	if count == -1 {
+		err = db.Get(&res.Count, countQuery+searchCondition, params...)
+		if err != nil {
+			c.Logger().Errorf("searchChairs DB execution error : %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		go func() {
+			_, err := db.Exec("INSERT INTO chair_search_count(cond,cnt) VALUES (?,?)", hash, res.Count)
+			if err != nil {
+				c.Logger().Errorf("failed to insert estate: %v", err)
+				return
+			}
+		}()
+	} else {
+		res.Count = count
 	}
 
 	chairs := []Chair{}
