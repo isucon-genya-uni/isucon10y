@@ -22,5 +22,5 @@ fetch:
 	rsync -avzr isucon1-server:/tmp/fgprof /tmp
 	rsync -avzr isucon1-server:/tmp/trace /tmp
 	rsync -avzr isucon1-server:/tmp/profile /tmp
-	rsync -avzr --rsync-path='sudo rsync' isucon1-server:/var/log/nginx/access.log /tmp
-	rsync -avzr isucon1-server:/tmp/slow.log /tmp
+	rsync -avzr isucon1-server:/var/log/nginx/access.log /tmp
+	rsync -avzr --rsync-path='sudo rsync' isucon1-server:/tmp/slow.log /tmp
