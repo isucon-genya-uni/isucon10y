@@ -62,19 +62,21 @@ type ChairListResponse struct {
 
 //Estate 物件
 type Estate struct {
-	ID          int64   `db:"id" json:"id"`
-	Thumbnail   string  `db:"thumbnail" json:"thumbnail"`
-	Name        string  `db:"name" json:"name"`
-	Description string  `db:"description" json:"description"`
-	Latitude    float64 `db:"latitude" json:"latitude"`
-	Longitude   float64 `db:"longitude" json:"longitude"`
-	Address     string  `db:"address" json:"address"`
-	Rent        int64   `db:"rent" json:"rent"`
-	RentID      int64   `db:"rent_id" json:"-"`
-	DoorHeight  int64   `db:"door_height" json:"doorHeight"`
-	DoorWidth   int64   `db:"door_width" json:"doorWidth"`
-	Features    string  `db:"features" json:"features"`
-	Popularity  int64   `db:"popularity" json:"-"`
+	ID           int64   `db:"id" json:"id"`
+	Thumbnail    string  `db:"thumbnail" json:"thumbnail"`
+	Name         string  `db:"name" json:"name"`
+	Description  string  `db:"description" json:"description"`
+	Latitude     float64 `db:"latitude" json:"latitude"`
+	Longitude    float64 `db:"longitude" json:"longitude"`
+	Address      string  `db:"address" json:"address"`
+	Rent         int64   `db:"rent" json:"rent"`
+	RentID       int64   `db:"rent_id" json:"-"`
+	DoorHeight   int64   `db:"door_height" json:"doorHeight"`
+	DoorHeightID int64   `db:"door_height_id" json:"-"`
+	DoorWidth    int64   `db:"door_width" json:"doorWidth"`
+	DoorWidthID  int64   `db:"door_width_id" json:"-"`
+	Features     string  `db:"features" json:"features"`
+	Popularity   int64   `db:"popularity" json:"-"`
 }
 
 //EstateSearchResponse estate/searchへのレスポンスの形式
@@ -354,6 +356,38 @@ func initialize(c echo.Context) error {
 			}
 		} else {
 			query := `UPDATE estate SET rent_id = ? WHERE rent > ?`
+			_, err := db.Exec(query, r.ID, r.Min)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	for _, r := range estateSearchCondition.DoorWidth.Ranges {
+		if r.Max > 0 {
+			query := `UPDATE estate SET door_width_id = ? WHERE door_width > ? AND door_width <= ?`
+			_, err := db.Exec(query, r.ID, r.Min, r.Max)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			query := `UPDATE estate SET door_width_id = ? WHERE door_width > ?`
+			_, err := db.Exec(query, r.ID, r.Min)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	for _, r := range estateSearchCondition.DoorHeight.Ranges {
+		if r.Max > 0 {
+			query := `UPDATE estate SET door_height_id = ? WHERE door_height > ? AND door_height <= ?`
+			_, err := db.Exec(query, r.ID, r.Min, r.Max)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			query := `UPDATE estate SET door_height_id = ? WHERE door_height > ?`
 			_, err := db.Exec(query, r.ID, r.Min)
 			if err != nil {
 				panic(err)
@@ -741,11 +775,13 @@ func postEstate(c echo.Context) error {
 		features := rm.NextString()
 		popularity := rm.NextInt()
 		rentID := valueToRangeID(int64(rent), &estateSearchCondition.Rent)
+		doorHeightID := valueToRangeID(int64(doorHeight), &estateSearchCondition.DoorHeight)
+		doorWidthID := valueToRangeID(int64(doorWidth), &estateSearchCondition.DoorWidth)
 		if err := rm.Err(); err != nil {
 			c.Logger().Errorf("failed to read record: %v", err)
 			return c.NoContent(http.StatusBadRequest)
 		}
-		_, err := tx.Exec("INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, rent_id, door_height, door_width, features, popularity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, address, latitude, longitude, rent, rentID, doorHeight, doorWidth, features, popularity)
+		_, err := tx.Exec("INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, rent_id, door_height, door_height_id, door_width, door_width_id, features, popularity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, address, latitude, longitude, rent, rentID, doorHeight, doorHeightID, doorWidth, doorWidthID, features, popularity)
 		if err != nil {
 			c.Logger().Errorf("failed to insert estate: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
@@ -763,37 +799,23 @@ func searchEstates(c echo.Context) error {
 	params := make([]interface{}, 0)
 
 	if c.QueryParam("doorHeightRangeId") != "" {
-		doorHeight, err := getRange(estateSearchCondition.DoorHeight, c.QueryParam("doorHeightRangeId"))
+		_, err := getRange(estateSearchCondition.DoorHeight, c.QueryParam("doorHeightRangeId"))
 		if err != nil {
 			c.Echo().Logger.Infof("doorHeightRangeID invalid, %v : %v", c.QueryParam("doorHeightRangeId"), err)
 			return c.NoContent(http.StatusBadRequest)
 		}
-
-		if doorHeight.Min != -1 {
-			conditions = append(conditions, "door_height >= ?")
-			params = append(params, doorHeight.Min)
-		}
-		if doorHeight.Max != -1 {
-			conditions = append(conditions, "door_height < ?")
-			params = append(params, doorHeight.Max)
-		}
+		conditions = append(conditions, "door_height_id = ?")
+		params = append(params, c.QueryParam("doorHeightRangeId"))
 	}
 
 	if c.QueryParam("doorWidthRangeId") != "" {
-		doorWidth, err := getRange(estateSearchCondition.DoorWidth, c.QueryParam("doorWidthRangeId"))
+		_, err := getRange(estateSearchCondition.DoorWidth, c.QueryParam("doorWidthRangeId"))
 		if err != nil {
 			c.Echo().Logger.Infof("doorWidthRangeID invalid, %v : %v", c.QueryParam("doorWidthRangeId"), err)
 			return c.NoContent(http.StatusBadRequest)
 		}
-
-		if doorWidth.Min != -1 {
-			conditions = append(conditions, "door_width >= ?")
-			params = append(params, doorWidth.Min)
-		}
-		if doorWidth.Max != -1 {
-			conditions = append(conditions, "door_width < ?")
-			params = append(params, doorWidth.Max)
-		}
+		conditions = append(conditions, "door_width_id = ?")
+		params = append(params, c.QueryParam("doorWidthRangeId"))
 	}
 
 	if c.QueryParam("rentRangeId") != "" {
