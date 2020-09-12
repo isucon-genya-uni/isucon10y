@@ -54,7 +54,7 @@ CREATE TABLE isuumo.chair
 
 CREATE TABLE isuumo.chair_search_count
 (
-    cond        CHAR(32) NOT NULL PRIMARY KEY,
+    cond        CHAR(16) NOT NULL PRIMARY KEY,
     cnt         INTEGER NOT NULL
 );
 /*
