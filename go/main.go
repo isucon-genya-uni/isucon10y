@@ -303,20 +303,6 @@ func initialize(c echo.Context) error {
 	var ProfSeconds = "100"
 	var ProfPath = "/tmp"
 	go func() {
-		cmd := exec.Command("bash", "./bin/profile.sh", ProfSeconds, ProfPath+"/profile")
-		err := cmd.Run()
-		if err != nil {
-			panic(err)
-		}
-	}()
-	go func() {
-		cmd := exec.Command("bash", "./bin/trace.sh", ProfSeconds, ProfPath+"/trace")
-		err := cmd.Run()
-		if err != nil {
-			panic(err)
-		}
-	}()
-	go func() {
 		cmd := exec.Command("bash", "./bin/fgprof.sh", ProfSeconds, ProfPath+"/fgprof")
 		err := cmd.Run()
 		if err != nil {
