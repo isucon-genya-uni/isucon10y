@@ -24,7 +24,7 @@ CREATE TABLE isuumo.estate
 );
 
 create index estate_rent_id on isuumo.estate (rent_id);
-create index estate_rent_id on isuumo.estate (rent_id, door_height);
+create index estate_rent_id_door_height on isuumo.estate (rent_id, door_height);
 create index estate_rent_id_door_width on isuumo.estate (rent_id, door_width);
 create index estate_rent_id_door_width_door_height on isuumo.estate (rent_id, door_width);
 create index estate_door_width on isuumo.estate (door_width);
