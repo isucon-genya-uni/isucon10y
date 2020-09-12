@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -1005,7 +1006,7 @@ func searchEstateNazotte(c echo.Context) error {
 
 	b := coordinates.getBoundingBox()
 	estatesInBoundingBox := []Estate{}
-	query := `SELECT * FROM estate WHERE latitude <= ? AND latitude >= ? AND longitude <= ? AND longitude >= ? ORDER BY popularity ASC, id ASC`
+	query := `SELECT * FROM estate WHERE latitude <= ? AND latitude >= ? AND longitude <= ? AND longitude >= ?`
 	err = db.Select(&estatesInBoundingBox, query, b.BottomRightCorner.Latitude, b.TopLeftCorner.Latitude, b.BottomRightCorner.Longitude, b.TopLeftCorner.Longitude)
 	if err == sql.ErrNoRows {
 		c.Echo().Logger.Infof("select * from estate where latitude ...", err)
@@ -1014,6 +1015,17 @@ func searchEstateNazotte(c echo.Context) error {
 		c.Echo().Logger.Errorf("database execution error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	sort.Slice(estatesInBoundingBox, func(i, j int) bool {
+		if estatesInBoundingBox[i].Popularity < estatesInBoundingBox[j].Popularity {
+			return true
+		} else if estatesInBoundingBox[i].Popularity == estatesInBoundingBox[j].Popularity {
+			if estatesInBoundingBox[i].ID < estatesInBoundingBox[j].ID {
+				return true
+			}
+		}
+		return false
+	})
 
 	estatesInPolygon := []Estate{}
 	for _, estate := range estatesInBoundingBox {
