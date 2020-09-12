@@ -349,13 +349,13 @@ func initialize(c echo.Context) error {
 
 	for _, r := range estateSearchCondition.Rent.Ranges {
 		if r.Max > 0 {
-			query := `UPDATE estate SET rent_id = ? WHERE rent > ? AND rent <= ?`
+			query := `UPDATE estate SET rent_id = ? WHERE rent >= ? AND rent < ?`
 			_, err := db.Exec(query, r.ID, r.Min, r.Max)
 			if err != nil {
 				panic(err)
 			}
 		} else {
-			query := `UPDATE estate SET rent_id = ? WHERE rent > ?`
+			query := `UPDATE estate SET rent_id = ? WHERE rent >= ?`
 			_, err := db.Exec(query, r.ID, r.Min)
 			if err != nil {
 				panic(err)
@@ -365,13 +365,13 @@ func initialize(c echo.Context) error {
 
 	for _, r := range estateSearchCondition.DoorWidth.Ranges {
 		if r.Max > 0 {
-			query := `UPDATE estate SET door_width_id = ? WHERE door_width > ? AND door_width <= ?`
+			query := `UPDATE estate SET door_width_id = ? WHERE door_width >= ? AND door_width < ?`
 			_, err := db.Exec(query, r.ID, r.Min, r.Max)
 			if err != nil {
 				panic(err)
 			}
 		} else {
-			query := `UPDATE estate SET door_width_id = ? WHERE door_width > ?`
+			query := `UPDATE estate SET door_width_id = ? WHERE door_width >= ?`
 			_, err := db.Exec(query, r.ID, r.Min)
 			if err != nil {
 				panic(err)
@@ -381,13 +381,13 @@ func initialize(c echo.Context) error {
 
 	for _, r := range estateSearchCondition.DoorHeight.Ranges {
 		if r.Max > 0 {
-			query := `UPDATE estate SET door_height_id = ? WHERE door_height > ? AND door_height <= ?`
+			query := `UPDATE estate SET door_height_id = ? WHERE door_height >= ? AND door_height < ?`
 			_, err := db.Exec(query, r.ID, r.Min, r.Max)
 			if err != nil {
 				panic(err)
 			}
 		} else {
-			query := `UPDATE estate SET door_height_id = ? WHERE door_height > ?`
+			query := `UPDATE estate SET door_height_id = ? WHERE door_height >= ?`
 			_, err := db.Exec(query, r.ID, r.Min)
 			if err != nil {
 				panic(err)
