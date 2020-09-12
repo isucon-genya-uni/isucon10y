@@ -47,3 +47,12 @@ CREATE TABLE isuumo.chair
     popularity  INTEGER         NOT NULL,
     stock       INTEGER         NOT NULL
 );
+/*
+MySQL [isuumo]> explain SELECT * FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT 20;
++----+-------------+-------+------------+------+---------------+------+---------+------+-------+----------+-----------------------------+
+| id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows  | filtered | Extra                       |
++----+-------------+-------+------------+------+---------------+------+---------+------+-------+----------+-----------------------------+
+|  1 | SIMPLE      | chair | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 28907 |    33.33 | Using where; Using filesort |
++----+-------------+-------+------------+------+---------------+------+---------+------+-------+----------+-----------------------------+
+*/
+create index i1 on isuumo.chair (price);
