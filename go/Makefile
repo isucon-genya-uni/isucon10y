@@ -17,3 +17,8 @@ deploy:
 	HOST=isucon1-server ./restart.sh
 	HOST=isucon2-server ./restart.sh
 	HOST=isucon3-server ./restart.sh
+
+fetch:
+	rsync -avzr isucon1-server:/tmp/fgprof .
+	rsync -avzr isucon1-server:/tmp/trace .
+	rsync -avzr isucon1-server:/tmp/profile .
