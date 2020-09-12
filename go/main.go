@@ -390,7 +390,7 @@ func getChairDetail(c echo.Context) error {
 
 func valueToRangeID(value int64, rc *RangeCondition) int64 {
 	for _, r := range rc.Ranges {
-		if r.Min > value && r.Min != -1 {
+		if r.Min >= value && r.Min != -1 {
 			continue
 		}
 		if r.Max < value && r.Max != -1 {
