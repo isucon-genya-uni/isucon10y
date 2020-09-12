@@ -278,6 +278,9 @@ func main() {
 	e.GET("/api/estate/search/condition", getEstateSearchCondition)
 	e.GET("/api/recommended_estate/:id", searchRecommendedEstateWithChair)
 
+	// static
+	e.Static("/", "data")
+
 	mySQLConnectionData = NewMySQLConnectionEnv()
 
 	var err error
