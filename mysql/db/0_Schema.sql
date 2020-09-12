@@ -22,6 +22,7 @@ CREATE TABLE isuumo.estate
     features       VARCHAR(64)      NOT NULL,
     popularity     INTEGER          NOT NULL
 );
+
 create index e1 on isuumo.estate (popularity);
 create index estate_rent_id on isuumo.estate (rent_id);
 create index estate_rent_id_door_height on isuumo.estate (rent_id, door_height);
@@ -30,6 +31,14 @@ create index estate_rent_id_door_width_door_height on isuumo.estate (rent_id, do
 create index estate_door_width on isuumo.estate (door_width);
 create index estate_door_height on isuumo.estate (door_height);
 create index estate_door_width_door_height on isuumo.estate (door_width, door_height);
+
+create index estate_rent_id_popularity on isuumo.estate (rent_id);
+create index estate_rent_id_door_height_id on isuumo.estate (rent_id, door_height_id);
+create index estate_rent_id_door_width_id on isuumo.estate (rent_id, door_width_id);
+create index estate_rent_id_door_width_id_door_height_id on isuumo.estate (rent_id, door_width_id, door_height_id);
+create index estate_door_width_id on isuumo.estate (door_width_id);
+create index estate_door_height_id on isuumo.estate (door_height_id);
+create index estate_door_width_id_door_height_id on isuumo.estate (door_width_id, door_height_id);
 
 CREATE TABLE isuumo.chair
 (
