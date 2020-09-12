@@ -23,6 +23,8 @@ CREATE TABLE isuumo.estate
     popularity     INTEGER          NOT NULL
 );
 
+create index e1 on isuumo.estate (popularity);
+
 create index estate_rent_id_popularity on isuumo.estate (rent_id);
 create index estate_rent_id_door_height_id on isuumo.estate (rent_id, door_height_id);
 create index estate_rent_id_door_width_id on isuumo.estate (rent_id, door_width_id);
