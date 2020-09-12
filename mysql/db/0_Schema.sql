@@ -20,7 +20,7 @@ CREATE TABLE isuumo.estate
     features    VARCHAR(64)         NOT NULL,
     popularity  INTEGER             NOT NULL
 );
-
+create index e1 on isuumo.estate (popularity);
 create index estate_rent_id on isuumo.estate (rent_id);
 
 CREATE TABLE isuumo.chair

@@ -361,6 +361,11 @@ func initialize(c echo.Context) error {
 		}
 	}
 
+	_, err := db.Exec(`update estate set popularity = -popularity`)
+	if err != nil {
+		panic(err)
+	}
+
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
 	})
@@ -739,7 +744,7 @@ func postEstate(c echo.Context) error {
 		doorHeight := rm.NextInt()
 		doorWidth := rm.NextInt()
 		features := rm.NextString()
-		popularity := rm.NextInt()
+		popularity := -rm.NextInt()
 		rentID := valueToRangeID(int64(rent), &estateSearchCondition.Rent)
 		if err := rm.Err(); err != nil {
 			c.Logger().Errorf("failed to read record: %v", err)
@@ -834,7 +839,7 @@ func searchEstates(c echo.Context) error {
 	searchQuery := "SELECT * FROM estate WHERE "
 	countQuery := "SELECT COUNT(*) FROM estate WHERE "
 	searchCondition := strings.Join(conditions, " AND ")
-	limitOffset := " ORDER BY popularity DESC, id ASC LIMIT ? OFFSET ?"
+	limitOffset := " ORDER BY popularity ASC, id ASC LIMIT ? OFFSET ?"
 
 	var res EstateSearchResponse
 	err = db.Get(&res.Count, countQuery+searchCondition, params...)
