@@ -22,3 +22,5 @@ fetch:
 	rsync -avzr isucon1-server:/tmp/fgprof .
 	rsync -avzr isucon1-server:/tmp/trace .
 	rsync -avzr isucon1-server:/tmp/profile .
+	rsync -avzr isucon1-server:/var/log/nginx/access.log .
+	rsync -avzr isucon1-server:/tmp/slow.log .
