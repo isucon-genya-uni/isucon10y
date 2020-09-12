@@ -14,11 +14,14 @@ CREATE TABLE isuumo.estate
     latitude    DOUBLE PRECISION    NOT NULL,
     longitude   DOUBLE PRECISION    NOT NULL,
     rent        INTEGER             NOT NULL,
+    rent_id     INTEGER             NOT NULL DEFAULT -1,
     door_height INTEGER             NOT NULL,
     door_width  INTEGER             NOT NULL,
     features    VARCHAR(64)         NOT NULL,
     popularity  INTEGER             NOT NULL
 );
+
+create index estate_rent_id on isuumo.estate (rent_id);
 
 CREATE TABLE isuumo.chair
 (
