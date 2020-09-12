@@ -500,11 +500,6 @@ func postChair(c echo.Context) error {
 			c.Logger().Errorf("failed to insert chair: %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		_, err = tx.Exec("DELETE FROM chair_search_count")
-		if err != nil {
-			c.Logger().Errorf("failed to insert chair_search_count: %v", err)
-			return c.NoContent(http.StatusInternalServerError)
-		}
 	}
 	if err := tx.Commit(); err != nil {
 		c.Logger().Errorf("failed to commit tx: %v", err)
