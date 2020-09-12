@@ -17,10 +17,12 @@ deploy:
 	HOST=isucon1-server ./restart.sh
 	HOST=isucon2-server ./restart.sh
 	HOST=isucon3-server ./restart.sh
+	ssh isucon1-server 'sudo systemctl restart mysql'
+	echo "[DONE] sudo systemctl restart mysql"
 
 fetch:
-	rsync -avzr isucon1-server:/tmp/fgprof /tmp
-	rsync -avzr isucon1-server:/tmp/trace /tmp
-	rsync -avzr isucon1-server:/tmp/profile /tmp
-	rsync -avzr isucon1-server:/var/log/nginx/access.log /tmp
+	rsync -avzr isucon3-server:/tmp/fgprof /tmp
+	rsync -avzr isucon3-server:/tmp/trace /tmp
+	rsync -avzr isucon3-server:/tmp/profile /tmp
+	rsync -avzr isucon3-server:/var/log/nginx/access.log /tmp
 	rsync -avzr --rsync-path='sudo rsync' isucon1-server:/tmp/slow.log /tmp
