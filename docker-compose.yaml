@@ -1,0 +1,15 @@
+version: '3.1'
+
+services:
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_USER: isucon
+      MYSQL_PASSWORD: isucon
+      MYSQL_DATABASE: hoge
+      MYSQL_ROOT_PASSWORD: isucon
+      TZ: "Asia/Tokyo"
+    ports:
+      - 3306:3306
+    tty: true
