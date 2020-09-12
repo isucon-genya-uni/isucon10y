@@ -665,7 +665,6 @@ func searchChairs(c echo.Context) error {
 	hashBytes := md5.Sum([]byte(searchCond))
 	hash := hex.EncodeToString(hashBytes[:])
 	count, ok := cntMap.Get(hash)
-	fmt.Printf("\n😺 %+v", count)
 	var res ChairSearchResponse
 	if !ok {
 		err = db.Get(&res.Count, countQuery+searchCondition, params...)
