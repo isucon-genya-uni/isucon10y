@@ -34,10 +34,7 @@ then
   echo "no $TRACE_PATH found"
 fi
 
-ssh isucon@$HOST 'sudo systemctl restart mysql'
-echo "[DONE] sudo systemctl restart mysql"
 ssh isucon@$HOST 'sudo systemctl restart nginx'
 echo "[DONE] sudo systemctl restart nginx"
 ssh isucon@$HOST "sudo systemctl restart $SERVICE"
 echo "[DONE] sudo systemctl restart $SERVICE"
-ssh isucon@$HOST journalctl -f
