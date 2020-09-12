@@ -19,8 +19,8 @@ deploy:
 	HOST=isucon3-server ./restart.sh
 
 fetch:
-	rsync -avzr isucon1-server:/tmp/fgprof .
-	rsync -avzr isucon1-server:/tmp/trace .
-	rsync -avzr isucon1-server:/tmp/profile .
-	rsync -avzr isucon1-server:/var/log/nginx/access.log .
-	rsync -avzr isucon1-server:/tmp/slow.log .
+	rsync -avzr isucon1-server:/tmp/fgprof /tmp
+	rsync -avzr isucon1-server:/tmp/trace /tmp
+	rsync -avzr isucon1-server:/tmp/profile /tmp
+	rsync -avzr isucon1-server:/var/log/nginx/access.log /tmp
+	rsync -avzr isucon1-server:/tmp/slow.log /tmp
