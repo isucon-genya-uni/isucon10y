@@ -476,7 +476,6 @@ func postChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
-	cntMap.Clear()
 	for _, row := range records {
 		rm := RecordMapper{Record: row}
 		id := rm.NextInt()
@@ -502,6 +501,7 @@ func postChair(c echo.Context) error {
 			return c.NoContent(http.StatusInternalServerError)
 		}
 	}
+	chairCountMap.Clear()
 	if err := tx.Commit(); err != nil {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -543,7 +543,8 @@ func NewCountMap() *countMap {
 	return c
 }
 
-var cntMap = NewCountMap()
+var chairCountMap = NewCountMap()
+var estateCountMap = NewCountMap()
 
 func searchChairs(c echo.Context) error {
 	conditions := make([]string, 0)
@@ -660,7 +661,7 @@ func searchChairs(c echo.Context) error {
 
 	hashBytes := md5.Sum([]byte(searchCond))
 	hash := hex.EncodeToString(hashBytes[:])
-	count, ok := cntMap.Get(hash)
+	count, ok := chairCountMap.Get(hash)
 	var res ChairSearchResponse
 	if !ok {
 		err = db.Get(&res.Count, countQuery+searchCondition, params...)
@@ -668,7 +669,7 @@ func searchChairs(c echo.Context) error {
 			c.Logger().Errorf("searchChairs DB execution error : %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		cntMap.Set(hash, res.Count)
+		chairCountMap.Set(hash, res.Count)
 	} else {
 		res.Count = count
 	}
@@ -846,6 +847,7 @@ func postEstate(c echo.Context) error {
 			return c.NoContent(http.StatusInternalServerError)
 		}
 	}
+	estateCountMap.Clear()
 	if err := tx.Commit(); err != nil {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
@@ -856,7 +858,7 @@ func postEstate(c echo.Context) error {
 func searchEstates(c echo.Context) error {
 	conditions := make([]string, 0)
 	params := make([]interface{}, 0)
-
+	searchCond := c.QueryParam("doorHeightRangeId") + "\t" + c.QueryParam("doorWidthRangeId") + "\t" + c.QueryParam("rentRangeId") + "\t" + c.QueryParam("features")
 	if c.QueryParam("doorHeightRangeId") != "" {
 		_, err := getRange(estateSearchCondition.DoorHeight, c.QueryParam("doorHeightRangeId"))
 		if err != nil {
@@ -918,10 +920,18 @@ func searchEstates(c echo.Context) error {
 	limitOffset := " ORDER BY popularity ASC, id ASC LIMIT ? OFFSET ?"
 
 	var res EstateSearchResponse
-	err = db.Get(&res.Count, countQuery+searchCondition, params...)
-	if err != nil {
-		c.Logger().Errorf("searchEstates DB execution error : %v", err)
-		return c.NoContent(http.StatusInternalServerError)
+	hashBytes := md5.Sum([]byte(searchCond))
+	hash := hex.EncodeToString(hashBytes[:])
+	count, ok := estateCountMap.Get(hash)
+	if ok {
+		res.Count = count
+	} else {
+		err = db.Get(&res.Count, countQuery+searchCondition, params...)
+		if err != nil {
+			c.Logger().Errorf("searchEstates DB execution error : %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		chairCountMap.Set(hash, res.Count)
 	}
 
 	estates := []Estate{}
