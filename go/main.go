@@ -13,13 +13,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/felixge/fgprof"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo"
@@ -254,12 +252,6 @@ func init() {
 }
 
 func main() {
-	runtime.SetBlockProfileRate(1)
-	http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
-	go func() {
-		http.ListenAndServe("0.0.0.0:6060", nil)
-	}()
-
 	// Echo instance
 	e := echo.New()
 	e.Debug = true
@@ -309,30 +301,6 @@ func main() {
 }
 
 func initialize(c echo.Context) error {
-	var ProfSeconds = "100"
-	var ProfPath = "/tmp"
-	go func() {
-		cmd := exec.Command("bash", "./bin/profile.sh", ProfSeconds, ProfPath+"/profile")
-		err := cmd.Run()
-		if err != nil {
-			panic(err)
-		}
-	}()
-	go func() {
-		cmd := exec.Command("bash", "./bin/trace.sh", ProfSeconds, ProfPath+"/trace")
-		err := cmd.Run()
-		if err != nil {
-			panic(err)
-		}
-	}()
-	go func() {
-		cmd := exec.Command("bash", "./bin/fgprof.sh", ProfSeconds, ProfPath+"/fgprof")
-		err := cmd.Run()
-		if err != nil {
-			panic(err)
-		}
-	}()
-
 	sqlDir := filepath.Join("..", "mysql", "db")
 	paths := []string{
 		filepath.Join(sqlDir, "0_Schema.sql"),
