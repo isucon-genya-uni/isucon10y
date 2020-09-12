@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/md5"
 	"database/sql"
 	"encoding/csv"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +16,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/felixge/fgprof"
 	_ "github.com/go-sql-driver/mysql"
@@ -49,6 +52,11 @@ type Chair struct {
 	Kind        string `db:"kind" json:"kind"`
 	Popularity  int64  `db:"popularity" json:"-"`
 	Stock       int64  `db:"stock" json:"-"`
+}
+
+type ChairCount struct {
+	Cond string `db:"cond"`
+	Cnt  int64  `db:"cnt"`
 }
 
 type ChairSearchResponse struct {
@@ -467,6 +475,7 @@ func postChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
+	cntMap.Clear()
 	for _, row := range records {
 		rm := RecordMapper{Record: row}
 		id := rm.NextInt()
@@ -499,10 +508,46 @@ func postChair(c echo.Context) error {
 	return c.NoContent(http.StatusCreated)
 }
 
+type countMap struct {
+	// Setが多いならsync.Mutex
+	sync.RWMutex
+	count map[string]int64
+}
+
+func (c *countMap) Set(key string, value int64) {
+	c.Lock()
+	c.count[key] = value
+	c.Unlock()
+}
+
+func (c *countMap) Get(key string) (int64, bool) {
+	c.RLock()
+	v, found := c.count[key]
+	c.RUnlock()
+	return v, found
+}
+
+func (c *countMap) Clear() {
+	c.RLock()
+	c.count = make(map[string]int64)
+	c.RUnlock()
+	return
+}
+
+func NewCountMap() *countMap {
+	m := make(map[string]int64)
+	c := &countMap{
+		count: m,
+	}
+	return c
+}
+
+var cntMap = NewCountMap()
+
 func searchChairs(c echo.Context) error {
 	conditions := make([]string, 0)
 	params := make([]interface{}, 0)
-
+	searchCond := c.QueryParam("priceRangeId") + "\t" + c.QueryParam("heightRangeId") + "\t" + c.QueryParam("widthRangeId") + "\t" + c.QueryParam("depthRangeId") + "\t" + c.QueryParam("kind") + "\t" + c.QueryParam("color") + "\t" + c.QueryParam("features")
 	if c.QueryParam("priceRangeId") != "" {
 		chairPrice, err := getRange(chairSearchCondition.Price, c.QueryParam("priceRangeId"))
 		if err != nil {
@@ -612,11 +657,19 @@ func searchChairs(c echo.Context) error {
 	searchCondition := strings.Join(conditions, " AND ")
 	limitOffset := " ORDER BY popularity DESC, id ASC LIMIT ? OFFSET ?"
 
+	hashBytes := md5.Sum([]byte(searchCond))
+	hash := hex.EncodeToString(hashBytes[:])
+	count, ok := cntMap.Get(hash)
 	var res ChairSearchResponse
-	err = db.Get(&res.Count, countQuery+searchCondition, params...)
-	if err != nil {
-		c.Logger().Errorf("searchChairs DB execution error : %v", err)
-		return c.NoContent(http.StatusInternalServerError)
+	if !ok {
+		err = db.Get(&res.Count, countQuery+searchCondition, params...)
+		if err != nil {
+			c.Logger().Errorf("searchChairs DB execution error : %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		cntMap.Set(hash, res.Count)
+	} else {
+		res.Count = count
 	}
 
 	chairs := []Chair{}

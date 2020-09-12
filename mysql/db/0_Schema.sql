@@ -51,6 +51,7 @@ CREATE TABLE isuumo.chair
     popularity  INTEGER         NOT NULL,
     stock       INTEGER         NOT NULL
 );
+
 /*
 MySQL [isuumo]> explain SELECT * FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT 20;
 +----+-------------+-------+------------+------+---------------+------+---------+------+-------+----------+-----------------------------+
